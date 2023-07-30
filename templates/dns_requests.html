@@ -6,7 +6,7 @@
 <body>
     {% for mac, data in dns_data.items() %}
         <details>
-            <summary>{{ mac }} ({{ data['hostname'] }})</summary>
+            <summary>{{ mac }} ({{ data['hostname'] }}, {{ data['manufacturer'] }})</summary>
             <ul>
                 {% for request in data['requests'] %}
                     <li>{{ request }}</li>
