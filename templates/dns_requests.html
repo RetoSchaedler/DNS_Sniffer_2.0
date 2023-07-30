@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DNS Requests</title>
+</head>
+<body>
+    {% for mac, data in dns_data.items() %}
+        <details>
+            <summary>{{ mac }} ({{ data['hostname'] }})</summary>
+            <ul>
+                {% for request in data['requests'] %}
+                    <li>{{ request }}</li>
+                {% endfor %}
+            </ul>
+        </details>
+    {% endfor %}
+</body>
+</html>
