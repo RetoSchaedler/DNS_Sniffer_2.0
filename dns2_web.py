@@ -1,5 +1,6 @@
 from flask import Flask, render_template
 import sqlite3
+from manuf import manuf
 
 app = Flask(__name__)
 
@@ -13,6 +14,9 @@ def get_dns_requests():
     conn_dhcp = sqlite3.connect('dhcp_name.db')
     c_dhcp = conn_dhcp.cursor()
 
+    # MAC-Parser erstellen
+    p = manuf.MacParser()
+
     c_dns.execute("SELECT * FROM dns_requests")
     results = c_dns.fetchall()
 
@@ -24,8 +28,11 @@ def get_dns_requests():
         result = c_dhcp.fetchone()
         hostname = result[0] if result else "Unknown"
 
+        # Hersteller ermitteln
+        manufacturer = p.get_manuf(mac)
+
         if mac not in dns_data:
-            dns_data[mac] = {'hostname': hostname, 'requests': []}
+            dns_data[mac] = {'hostname': hostname, 'manufacturer': manufacturer, 'requests': []}
         dns_data[mac]['requests'].append((timestamp, ip, dns))
 
     conn_dns.close()
