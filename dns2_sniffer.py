@@ -19,16 +19,32 @@ def startscreen():
 
 
 def packetSniffer(pkt, c, conn):
-	if pkt.haslayer(DNSQR):
-		timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-		dnsName=(str(pkt[DNS].qd.qname)[2:-2])
-		if IPv6 in pkt:
-			ipAddr=(str(pkt[IPv6].dst))
-		else:
-			ipAddr=(str(pkt[IP].dst))
-		mac_address=pkt[Ether].dst
-		c.execute("INSERT INTO dns_requests VALUES (?,?,?,?)", (timestamp, ipAddr, mac_address, dnsName))
-		conn.commit()
+	try:
+		if pkt.haslayer(DNSQR):
+			timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+			dnsName=(str(pkt[DNS].qd.qname)[2:-2])
+			if IPv6 in pkt:
+				ipAddr=(str(pkt[IPv6].dst))
+			else:
+				ipAddr=(str(pkt[IP].dst))
+			mac_address=pkt[Ether].dst
+			c.execute("INSERT INTO dns_requests VALUES (?,?,?,?)", (timestamp, ipAddr, mac_address, dnsName))
+			conn.commit()
+	except:
+		pass
+	try:    
+		if pkt.haslayer('TLS') and pkt['TLS'].type == 22 and pkt['TLS'].msg[0].msgtype == 1:
+			timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+			server_name = (pkt['TLS']['TLS_Ext_ServerName'].servernames[0].servername).decode("utf-8")
+			if IPv6 in pkt:
+				ipAddr=(str(pkt[IPv6].src))
+			else:
+				ipAddr=(str(pkt[IP].src))
+			mac_address=pkt[Ether].src
+			c.execute("INSERT INTO dns_requests VALUES (?,?,?,?)", (timestamp, ipAddr, mac_address, server_name))
+			conn.commit()
+	except:
+		pass
 
 
 def dnsSniffer():
@@ -46,9 +62,10 @@ def dnsSniffer():
 	# Tabelle erstellen
 	c.execute('''CREATE TABLE IF NOT EXISTS dns_requests
              (timestamp text, client_ip text, mac_address text, dns_request text)''')
-    
+
+	load_layer("tls")    
 	filterstr="udp and src port 53"
-	sniff(filter=filterstr, iface=intf, store=0, prn=lambda pkt: packetSniffer(pkt, c, conn))
+	sniff(iface=intf, store=0, prn=lambda pkt: packetSniffer(pkt, c, conn)) # filter=filterstr, 
 
 
 def get_option(dhcp_options, key):
